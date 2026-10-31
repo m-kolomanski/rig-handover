@@ -80,3 +80,25 @@ export const readNight: ReadNight = (runsDir, night) => {
   const result: Night = { night, rows, badLines };
   return result;
 };
+
+export type StatusCounts = Record<RunStatus, number>;
+
+// Run lines per status across the whole night (rows only keep the last status per job).
+// null when the night can't be read; bad lines are skipped, like in readNight.
+export const countStatuses = (runsDir: string, night: string): StatusCounts | null => {
+  if (!NIGHT.test(night)) return null;
+  let text: string | null;
+  try {
+    text = readText(join(runsDir, `${night}.jsonl`));
+  } catch {
+    return null;
+  }
+  if (text === null) return null;
+  const counts: StatusCounts = { ok: 0, retry: 0, fail: 0 };
+  for (const lineText of text.split(/\r?\n/)) {
+    if (lineText.trim() === '') continue;
+    const line = parseLine(lineText);
+    if (line !== null) counts[line.status] += 1;
+  }
+  return counts;
+};
